@@ -1,0 +1,101 @@
+import sqlite3
+import random
+import datetime
+
+conn = sqlite3.connect('DNSQuestion.sqlite')
+cur = conn.cursor()
+
+cur.executescript('''
+
+    DROP TABLE IF EXISTS MemberTable;
+    DROP TABLE IF EXISTS MachineTable;
+    DROP TABLE IF EXISTS PlaySessionTable;
+    DROP TABLE IF EXISTS Top3;
+
+    CREATE TABLE MemberTable (MemberShipNo INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE , FirstName TEXT , LastName TEXT);
+    INSERT INTO MemberTable (FirstName, LastName) VALUES ("Ashraf","Tawfik");
+    INSERT INTO MemberTable (FirstName, LastName) VALUES ("Danny","Nixon-Smith");
+    INSERT INTO MemberTable (FirstName, LastName) VALUES ("Monique","Nixon-Smith");
+    INSERT INTO MemberTable (FirstName, LastName) VALUES ("Candice","Komselis");
+    INSERT INTO MemberTable (FirstName, LastName) VALUES ("Gemma","Kivell");
+    INSERT INTO MemberTable (FirstName, LastName) VALUES ("Bernard","Osmond");
+    INSERT INTO MemberTable (FirstName, LastName) VALUES ("Nadine","Boyes");
+    INSERT INTO MemberTable (FirstName, LastName) VALUES ("Tim","Lucas");
+
+    CREATE TABLE "MachineTable" (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, FloorPosition INTEGER , StartDate DATE , EndDate DATE, Manufacturer TEXT, Brand TEXT, Game TEXT);
+    INSERT INTO "MachineTable" (FloorPosition , StartDate , EndDate , Manufacturer , Brand , Game ) VALUES ("47" , "2019-08-23" , "1900-01-01" , "Aristocrat" ,  "Dragon Link" , "Peace & Long Life");
+    INSERT INTO "MachineTable" (FloorPosition , StartDate , EndDate , Manufacturer , Brand , Game ) VALUES ("63" , "2019-04-10" , "1900-01-01" , "Playtech" ,  "The One" , "Short & Sweet");
+    INSERT INTO "MachineTable" (FloorPosition , StartDate , EndDate , Manufacturer , Brand , Game ) VALUES ("10" , "2019-06-13" , "1900-01-01" , "Goodman" ,  "The Last" , "Hypothetical Life");
+
+    CREATE TABLE PlaySessionTable (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE, MemberId INTEGER , MachineId INTEGER, TurnOver INTEGER , Wins INTEGER , Stroke INTEGER , StartDateTime DATETIME , EndDateTime DATETIME)
+
+''')
+
+
+#Find number of Members
+MemberCount = 0
+for row in cur.execute("SELECT * FROM MemberTable"):
+    MemberCount = MemberCount + 1
+
+#Find number of Machines
+MachineCount = 0
+for row in cur.execute("SELECT * FROM MachineTable"):
+    MachineCount = MachineCount + 1
+
+#While loop to input data for Playsession
+x = 0
+while x < 1000:
+    #Create Random Times
+    StartTime = datetime.time(random.randrange(24),random.randrange(0,60),random.randrange(0,60)) 
+    EndTime = datetime.time(random.randrange(24),random.randrange(0,60),random.randrange(0,60)) 
+    while EndTime < StartTime:
+        EndTime = datetime.time(random.randrange(24),random.randrange(0,60),random.randrange(0,60))
+
+    #Create Random Dates for month of October
+    start_date = datetime.date(2021, 10, 1)
+    end_date = datetime.date(2021, 10, 31)
+    time_between_dates = end_date - start_date
+    days_between_dates = time_between_dates.days
+    random_number_of_days = random.randrange(days_between_dates)
+    random_date = start_date + datetime.timedelta(days=random_number_of_days)
+
+    #Input Data into PlaySession
+    cur.execute("INSERT INTO PlaySessionTable (MemberId , MachineId , StartDateTime , EndDateTime , TurnOver, Wins , Stroke) VALUES (?,?,?,?,?,?,?)", 
+    (random.randrange(1,MemberCount+1) , random.randrange(1,MachineCount+1) , str(random_date) + " " + str(StartTime), str(random_date) + " " + str(EndTime), 
+    round(random.uniform(0,1000),2),round(random.uniform(0,1000),2),random.randrange(0,1000)))
+    x = x + 1
+
+#Create the table for Top 3 players on the 24th October / Question 2 Answer
+cur.execute('''
+    CREATE TABLE Top3 as 
+    SELECT MemberTable.FirstName , sum(PlaySessionTable.TurnOver) as TurnOverTotal, 
+    CAST(strftime('%s', PlaySessionTable.EndDateTime) as integer) - CAST(strftime('%s', PlaySessionTable.StartDateTime) as integer) AS AmountPlayedInSeconds, 
+    count(distinct PlaySessionTable.MachineId) as MachinesPlayed
+    FROM MemberTable JOIN PlaySessionTable  
+    WHERE PlaySessionTable.StartDateTime like '2021-10-24%' AND 
+    MemberTable.MemberShipNo=PlaySessionTable.MemberId 
+    group by MemberTable.FirstName
+    ORDER by TurnOverTotal DESC LIMIT 3
+''')
+
+conn.commit()
+
+
+
+#Question 1 BuzzFizz
+
+Count = 0
+
+while Count < 100:
+    Count = Count + 1
+    if Count % 3 == 0 :
+        if Count % 5 == 0:
+            print("FizzBuzz")
+            continue
+    if Count % 3 == 0:
+        print("Fizz")
+        continue
+    if Count % 5 == 0:
+        print("Buzz")
+        continue
+    print(Count)
